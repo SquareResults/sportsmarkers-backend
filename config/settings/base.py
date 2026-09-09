@@ -6,7 +6,9 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-local-development-key")
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY", "unsafe-local-development-key-do-not-use-in-production-2026"
+)
 DEBUG = False
 ALLOWED_HOSTS = [
     item for item in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if item
@@ -105,6 +107,11 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
+    "EXCEPTION_HANDLER": "apps.common.exceptions.api_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": ("rest_framework.throttling.ScopedRateThrottle",),
+    "DEFAULT_THROTTLE_RATES": {"auth": "30/minute"},
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 50,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 SIMPLE_JWT = {
@@ -118,6 +125,11 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API for athlete portfolios, sports statistics, highlights, and recruiting.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+        "apps.common.schema.add_error_responses",
+    ],
 }
 
 CORS_ALLOWED_ORIGINS = [
@@ -125,7 +137,3 @@ CORS_ALLOWED_ORIGINS = [
 ]
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@sportsmarkers.local")
-
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL

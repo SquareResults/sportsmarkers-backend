@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: sportsmarkers-api
+    runtime: python
+    plan: starter
+    buildCommand: bash build.sh
+    preDeployCommand: .venv/bin/python manage.py migrate --noinput && .venv/bin/python manage.py seed_sports
+    startCommand: .venv/bin/gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --access-logfile - --error-logfile -
+    healthCheckPath: /api/v1/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.12
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sportsmarkers-db
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+databases:
+  - name: sportsmarkers-db
+    plan: basic-256mb
+    databaseName: sportsmarkers
+    user: sportsmarkers

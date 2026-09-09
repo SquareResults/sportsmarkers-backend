@@ -1,13 +1,26 @@
 name: CI
-
 on:
   push:
-    branches: [main]
+    branches: [main, feat/production-mvp]
   pull_request:
-
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sportsmarkers
+          POSTGRES_USER: sportsmarkers
+          POSTGRES_PASSWORD: sportsmarkers
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sportsmarkers"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://sportsmarkers:sportsmarkers@localhost:5432/sportsmarkers
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -19,6 +32,14 @@ jobs:
       - run: uv sync --all-groups --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
+      - run: uv run python manage.py check
       - run: uv run python manage.py makemigrations --check --dry-run
+      - run: uv run python manage.py migrate --noinput
+      - run: uv run python manage.py collectstatic --noinput
       - run: uv run pytest
-
+      - run: uv run python manage.py spectacular --file /tmp/schema.yaml --validate --fail-on-warn
+      - run: uv run python manage.py check --deploy --fail-level WARNING
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+          DJANGO_SECRET_KEY: ci-only-placeholder-secret-key-never-use-in-production-2026
+          ALLOWED_HOSTS: localhost
