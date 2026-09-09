@@ -12,6 +12,8 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
 COPY . .
+RUN useradd --create-home app && chown -R app:app /app
+USER app
 ENV PATH="/app/.venv/bin:$PATH"
 
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

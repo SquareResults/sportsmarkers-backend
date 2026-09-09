@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
+from django.db.models.functions import Lower
 
 from apps.common.models import TimeStampedModel
 
@@ -24,6 +25,9 @@ class User(TimeStampedModel, AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["full_name"]
+
+    class Meta:
+        constraints = [models.UniqueConstraint(Lower("email"), name="unique_user_email_ci")]
 
     def __str__(self) -> str:
         return self.email
